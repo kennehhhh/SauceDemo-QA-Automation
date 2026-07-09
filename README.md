@@ -10,9 +10,12 @@ The project is not complete yet. A module is only implemented when executable py
 |---|---|
 | Login & Session | `LG-0001` through `LG-0039` |
 | Product Listing | `PL-0001` through `PL-0023` |
+| Product Sorting | `PS-0001` through `PS-0013` |
+| Product Detail | `PD-0001` through `PD-0015` |
+| Cart | `CT-0001` through `CT-0020` |
 | Core Workflows | `CW-0001` through `CW-0007` |
 
-`LG-0040` and `PL-0024` are UAT/manual and intentionally have no Selenium test. Other workbook modules are not implemented yet.
+`LG-0040`, `PL-0024`, `PS-0014`, `PD-0016`, `CT-0021`, and `CT-0022` are UAT/manual and intentionally have no Selenium test. Other workbook modules are not implemented yet.
 
 ## Current Structure
 
