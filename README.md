@@ -1,44 +1,74 @@
-# SauceDemo Selenium Core Workflow Automation
+# SauceDemo Workbook-Aligned Selenium Automation
 
-This project automates **only the System-category cases in the latest `Core Workflows - TC` sheet**
-from `SauceDemo_Refactored_Committed_Test_Cases.xlsx`.
+This repository is a SauceDemo execution engine for the current workbook-based QA project. The workbook remains the source of truth for test specifications and execution history; pytest/Selenium implements deterministic automated cases and writes actual execution results back to the workbook's `Test Execution Log`.
 
-It intentionally does **not** automate all 239 workbook cases. The scope is the main end-to-end
-user flow so the suite stays small, maintainable, and aligned with the workbook.
+The suite is intentionally hybrid. It does not claim to automate all 239 workbook cases, all UAT judgment cases, or every user/browser permutation.
 
-## Automated workbook cases
+## Current Automated Scope
 
-| Case ID | Scenario |
+All 14 workbook modules are recognized by the workbook parser and coverage tooling. Only the deterministic proof set below has Selenium implementations right now.
+
+Implemented automated Case IDs:
+
+| Module | Case IDs |
 |---|---|
-| CW-0001 | Successful standard purchase flow |
-| CW-0002 | Multi-item purchase flow |
-| CW-0003 | Add then remove before checkout |
-| CW-0004 | Product detail to cart to checkout |
-| CW-0005 | Cancel checkout information and continue shopping |
-| CW-0006 | Cancel checkout overview then return to cart |
-| CW-0007 | Sort then add cheapest product |
+| Login & Session | `LG-0009` through `LG-0015`, `LG-0023` |
+| Core Workflows | `CW-0001` through `CW-0007` |
 
-Total automated cases: **7**
+The login module is the proof-of-concept expansion from the workbook. The core workflow tests from the original prototype are preserved and now use explicit Case ID metadata.
 
-## Project structure
+## Workbook Module Roadmap
+
+| Code | Workbook Module | Sheet | Automation status |
+|---|---|---|---|
+| LG | Login & Session | `Login & Session - TC` | Implemented proof set |
+| PL | Product Listing | `Product Listing - TC` | Planned |
+| PS | Product Sorting | `Product Sorting - TC` | Planned |
+| PD | Product Detail | `Product Detail - TC` | Planned |
+| CT | Cart | `Cart - TC` | Planned |
+| CI | Checkout Information | `Checkout Information - TC` | Planned |
+| CO | Checkout Overview | `Checkout Overview - TC` | Planned |
+| OC | Order Completion | `Order Completion - TC` | Planned |
+| MN | Menu Navigation | `Menu Navigation - TC` | Planned |
+| RS | Reset App State | `Reset App State - TC` | Planned |
+| AC | Access Session Control | `Access Session Control - TC` | Planned |
+| FT | Footer External Links | `Footer External Links - TC` | Planned |
+| UX | Interface Responsive | `Interface Responsive - TC` | Planned/manual-heavy |
+| CW | Core Workflows | `Core Workflows - TC` | Implemented proof set |
+
+## Project Structure
 
 ```text
 saucedemo_selenium_core/
-├── case_mapping.csv
-├── config.py
-├── conftest.py
-├── pytest.ini
-├── requirements.txt
-├── pages/
-│   ├── base_page.py
-│   ├── cart_page.py
-│   ├── checkout_page.py
-│   ├── inventory_page.py
-│   ├── login_page.py
-│   └── product_page.py
-├── tests/
-│   └── test_core_workflows.py
-└── results/
++-- artifacts/                  # failure screenshots/page source by run_id
++-- pages/                      # Selenium page objects
++-- results/                    # result models, collector, CSV exporter, run manifests
++-- scripts/
+|   +-- coverage_report.py
+|   +-- update_workbook.py
+|   +-- validate_mappings.py
++-- tests/
+|   +-- access_session_control/
+|   +-- cart/
+|   +-- checkout_information/
+|   +-- checkout_overview/
+|   +-- core/
+|   +-- footer_external_links/
+|   +-- interface_responsive/
+|   +-- login/
+|   +-- menu_navigation/
+|   +-- order_completion/
+|   +-- product_detail/
+|   +-- product_listing/
+|   +-- product_sorting/
+|   +-- reset_app_state/
+|   +-- unit/
+|   +-- test_core_workflows.py
++-- workbook/                   # parser, module registry, Test Execution Log updater
++-- config.py
++-- conftest.py
++-- pytest.ini
++-- requirements.txt
 ```
 
 ## Setup
@@ -63,98 +93,125 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Modern Selenium uses Selenium Manager to resolve supported browser drivers automatically
-when possible, so you normally do not need to manually download a driver.
+Modern Selenium uses Selenium Manager to resolve supported browser drivers automatically when possible.
 
-## Run all core System workflows
+## Supported Browsers
 
-```bash
-pytest tests/test_core_workflows.py
+Directly supported:
+
+- Chrome
+- Edge
+- Firefox
+
+Opera is listed in the workbook as planning coverage, but this repository does not claim Opera support yet.
+
+Choose a browser:
+
+```powershell
+$env:BROWSER="chrome"
+pytest
 ```
 
-Headless Chrome:
-
-```bash
-set HEADLESS=true
-pytest tests/test_core_workflows.py
-```
-
-PowerShell:
+Headless:
 
 ```powershell
 $env:HEADLESS="true"
+pytest
+```
+
+## Run Tests
+
+Run the full automated suite:
+
+```bash
+pytest
+```
+
+Run one implemented module:
+
+```bash
+pytest tests/login
 pytest tests/test_core_workflows.py
 ```
 
-## Choose browser
-
-Chrome:
+Run one Case ID:
 
 ```bash
-set BROWSER=chrome
-pytest
+pytest --case-id LG-0010
 ```
 
-Edge:
+## Workbook Result Append
+
+Pass the current workbook path to append the run's execution rows into a saved workbook copy:
+
+```powershell
+pytest --workbook-path "D:\Downloads\SauceDemo-Spreadsheet.xlsx"
+```
+
+Optional explicit output path:
+
+```powershell
+pytest --workbook-path "D:\Downloads\SauceDemo-Spreadsheet.xlsx" --workbook-output "D:\Downloads\SauceDemo-Spreadsheet-automated.xlsx"
+```
+
+By default, the updater:
+
+- locates `Test Execution Log`
+- appends only actual pytest executions
+- preserves existing sheets and execution rows
+- validates Case ID and Module against workbook module sheets
+- continues existing `EXE-####` values
+- writes a new workbook copy
+- records `run_id` in Remarks
+- prevents duplicate import of the same run through an import ledger
+
+In-place workbook update is deliberately explicit and creates a backup first:
+
+```powershell
+pytest --workbook-path "D:\Downloads\SauceDemo-Spreadsheet.xlsx" --workbook-in-place
+```
+
+## CSV Fallback and Manifests
+
+Every run writes a structured JSON manifest under `results/`. By default it also writes a workbook-compatible CSV fallback.
+
+Disable CSV export:
 
 ```bash
-set BROWSER=edge
-pytest
+pytest --no-csv
 ```
 
-Firefox:
+Append a previously saved manifest to a workbook copy:
 
 ```bash
-set BROWSER=firefox
-pytest
+python scripts/update_workbook.py --workbook "D:\Downloads\SauceDemo-Spreadsheet.xlsx" --manifest "results\execution_manifest_RUN-....json"
 ```
 
-The framework deliberately does not claim Opera automation support by default. Opera is
-Chromium-based, but reliable execution depends on a compatible Opera/Chromium driver setup
-and browser binary configuration. Add it only if your environment is explicitly prepared.
+## Traceability Tools
 
-## Workbook-aligned result export
-
-After a test session, the framework writes a CSV into `results/` with columns matching the
-workbook `Test Execution Log`:
-
-```text
-Execution ID
-Case ID
-Module
-Test User
-Browser
-Actual Result
-Status
-Related Defect ID
-Tester
-Execution Date
-Remarks
-```
-
-You can copy/import those rows into the workbook's `Test Execution Log`.
-
-## Important execution model
-
-The automation project does not pre-create browser × user permutations.
-
-Each pytest run is an actual execution session. For example:
+Validate that implemented Case ID markers exist in the workbook:
 
 ```bash
-set BROWSER=chrome
-pytest
+python scripts/validate_mappings.py --workbook "D:\Downloads\SauceDemo-Spreadsheet.xlsx"
 ```
 
-produces Chrome execution rows.
-
-A later run:
+Generate an automation coverage summary:
 
 ```bash
-set BROWSER=firefox
-pytest
+python scripts/coverage_report.py --workbook "D:\Downloads\SauceDemo-Spreadsheet.xlsx"
 ```
 
-produces Firefox execution rows.
+## Manual vs Automated Scope
 
-That preserves the workbook architecture:
-one Case ID may have multiple actual executions, but only when those executions were genuinely run.
+Automate cases that are deterministic, observable, repeatable, and meaningful through Selenium.
+
+Keep manual:
+
+- UAT requiring representative-user judgment
+- subjective visual quality
+- nuanced responsive usability
+- performance experience without an agreed threshold
+- exploratory checks
+- standard-expectation defect classification that needs instructor/project review
+
+Failed automation writes execution evidence, but it does not automatically create confirmed defects.

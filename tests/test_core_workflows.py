@@ -32,6 +32,10 @@ def complete_checkout(driver) -> None:
 
 @pytest.mark.core
 @pytest.mark.system
+@pytest.mark.case_id("CW-0001")
+@pytest.mark.module("Core Workflows")
+@pytest.mark.test_user("standard_user")
+@pytest.mark.actual_result("A standard user completed a one-item purchase and reached the checkout confirmation page.")
 def test_CW_0001_successful_standard_purchase_flow(driver):
     inventory = login_standard(driver)
     inventory.add_product(PRODUCT_A)
@@ -46,6 +50,10 @@ def test_CW_0001_successful_standard_purchase_flow(driver):
 
 @pytest.mark.core
 @pytest.mark.system
+@pytest.mark.case_id("CW-0002")
+@pytest.mark.module("Core Workflows")
+@pytest.mark.test_user("standard_user")
+@pytest.mark.actual_result("A standard user completed checkout with Sauce Labs Backpack and Sauce Labs Bike Light.")
 def test_CW_0002_multi_item_purchase_flow(driver):
     inventory = login_standard(driver)
     inventory.add_product(PRODUCT_A)
@@ -69,6 +77,10 @@ def test_CW_0002_multi_item_purchase_flow(driver):
 
 @pytest.mark.core
 @pytest.mark.system
+@pytest.mark.case_id("CW-0003")
+@pytest.mark.module("Core Workflows")
+@pytest.mark.test_user("standard_user")
+@pytest.mark.actual_result("After removing one selected item before checkout, only the remaining item was purchased.")
 def test_CW_0003_add_then_remove_before_checkout(driver):
     inventory = login_standard(driver)
     inventory.add_product(PRODUCT_A)
@@ -84,6 +96,10 @@ def test_CW_0003_add_then_remove_before_checkout(driver):
 
 @pytest.mark.core
 @pytest.mark.system
+@pytest.mark.case_id("CW-0004")
+@pytest.mark.module("Core Workflows")
+@pytest.mark.test_user("standard_user")
+@pytest.mark.actual_result("A product was opened from detail view, added to cart, and completed through checkout.")
 def test_CW_0004_product_detail_to_cart_to_checkout(driver):
     inventory = login_standard(driver)
     inventory.open_product(PRODUCT_A)
@@ -101,6 +117,10 @@ def test_CW_0004_product_detail_to_cart_to_checkout(driver):
 
 @pytest.mark.core
 @pytest.mark.system
+@pytest.mark.case_id("CW-0005")
+@pytest.mark.module("Core Workflows")
+@pytest.mark.test_user("standard_user")
+@pytest.mark.actual_result("Cancel on checkout information returned to the cart, and Continue Shopping returned to Products.")
 def test_CW_0005_cancel_checkout_information_and_continue_shopping(driver):
     inventory = login_standard(driver)
     inventory.add_product(PRODUCT_A)
@@ -120,6 +140,10 @@ def test_CW_0005_cancel_checkout_information_and_continue_shopping(driver):
 
 @pytest.mark.core
 @pytest.mark.system
+@pytest.mark.case_id("CW-0006")
+@pytest.mark.module("Core Workflows")
+@pytest.mark.test_user("standard_user")
+@pytest.mark.actual_result("Cancel on checkout overview returned to Products while preserving the selected cart item.")
 def test_CW_0006_cancel_checkout_overview_then_return_to_cart(driver):
     inventory = login_standard(driver)
     inventory.add_product(PRODUCT_A)
@@ -140,6 +164,10 @@ def test_CW_0006_cancel_checkout_overview_then_return_to_cart(driver):
 
 @pytest.mark.core
 @pytest.mark.system
+@pytest.mark.case_id("CW-0007")
+@pytest.mark.module("Core Workflows")
+@pytest.mark.test_user("standard_user")
+@pytest.mark.actual_result("Products sorted from low to high price, and the cheapest displayed product was added to cart.")
 def test_CW_0007_sort_then_add_cheapest_product(driver):
     inventory = login_standard(driver)
     inventory.sort_by_value("lohi")
