@@ -38,5 +38,14 @@ class MenuComponent(BasePage):
     def is_open(self) -> bool:
         return self.is_visible(self.CLOSE)
 
+    def has_all_items(self) -> bool:
+        return self.is_visible(self.ALL_ITEMS)
+
+    def has_about(self) -> bool:
+        return self.is_visible(self.ABOUT)
+
     def has_logout(self) -> bool:
         return self.is_visible(self.LOGOUT)
+
+    def has_reset_app_state(self) -> bool:
+        return self.is_visible(self.RESET_APP_STATE)
