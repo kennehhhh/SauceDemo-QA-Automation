@@ -1,0 +1,8 @@
+﻿Case ID,Category,Module,Scenario,Applicable User,Browser Coverage,Automated Test
+CW-0001,System,Core Workflows,Successful standard purchase flow,standard_user,All Supported Browsers,tests/test_core_workflows.py::test_CW_0001
+CW-0002,System,Core Workflows,Multi-item purchase flow,standard_user,All Supported Browsers,tests/test_core_workflows.py::test_CW_0002
+CW-0003,System,Core Workflows,Add then remove before checkout,standard_user,Primary Browser,tests/test_core_workflows.py::test_CW_0003
+CW-0004,System,Core Workflows,Product detail to cart to checkout,standard_user,Primary Browser,tests/test_core_workflows.py::test_CW_0004
+CW-0005,System,Core Workflows,Cancel checkout information and continue shopping,standard_user,Primary Browser,tests/test_core_workflows.py::test_CW_0005
+CW-0006,System,Core Workflows,Cancel checkout overview then return to cart,standard_user,Primary Browser,tests/test_core_workflows.py::test_CW_0006
+CW-0007,System,Core Workflows,Sort then add cheapest product,standard_user,Primary Browser,tests/test_core_workflows.py::test_CW_0007
