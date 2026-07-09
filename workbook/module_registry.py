@@ -9,24 +9,23 @@ class WorkbookModule:
     module: str
     sheet_name: str
     test_path: str
-    status: str
 
 
 WORKBOOK_MODULES = [
-    WorkbookModule("LG", "Login & Session", "Login & Session - TC", "tests/login", "implemented proof"),
-    WorkbookModule("PL", "Product Listing", "Product Listing - TC", "tests/product_listing", "planned"),
-    WorkbookModule("PS", "Product Sorting", "Product Sorting - TC", "tests/product_sorting", "planned"),
-    WorkbookModule("PD", "Product Detail", "Product Detail - TC", "tests/product_detail", "planned"),
-    WorkbookModule("CT", "Cart", "Cart - TC", "tests/cart", "planned"),
-    WorkbookModule("CI", "Checkout Information", "Checkout Information - TC", "tests/checkout_information", "planned"),
-    WorkbookModule("CO", "Checkout Overview", "Checkout Overview - TC", "tests/checkout_overview", "planned"),
-    WorkbookModule("OC", "Order Completion", "Order Completion - TC", "tests/order_completion", "planned"),
-    WorkbookModule("MN", "Menu Navigation", "Menu Navigation - TC", "tests/menu_navigation", "planned"),
-    WorkbookModule("RS", "Reset App State", "Reset App State - TC", "tests/reset_app_state", "planned"),
-    WorkbookModule("AC", "Access Session Control", "Access Session Control - TC", "tests/access_session_control", "planned"),
-    WorkbookModule("FT", "Footer External Links", "Footer External Links - TC", "tests/footer_external_links", "planned"),
-    WorkbookModule("UX", "Interface Responsive", "Interface Responsive - TC", "tests/interface_responsive", "planned/manual-heavy"),
-    WorkbookModule("CW", "Core Workflows", "Core Workflows - TC", "tests/core", "implemented proof"),
+    WorkbookModule("LG", "Login & Session", "Login & Session - TC", "tests/login"),
+    WorkbookModule("PL", "Product Listing", "Product Listing - TC", "tests/product_listing"),
+    WorkbookModule("PS", "Product Sorting", "Product Sorting - TC", "tests/product_sorting"),
+    WorkbookModule("PD", "Product Detail", "Product Detail - TC", "tests/product_detail"),
+    WorkbookModule("CT", "Cart", "Cart - TC", "tests/cart"),
+    WorkbookModule("CI", "Checkout Information", "Checkout Information - TC", "tests/checkout_information"),
+    WorkbookModule("CO", "Checkout Overview", "Checkout Overview - TC", "tests/checkout_overview"),
+    WorkbookModule("OC", "Order Completion", "Order Completion - TC", "tests/order_completion"),
+    WorkbookModule("MN", "Menu & Navigation", "Menu Navigation - TC", "tests/menu_navigation"),
+    WorkbookModule("RS", "Reset App State", "Reset App State - TC", "tests/reset_app_state"),
+    WorkbookModule("AC", "Access & Session Control", "Access Session Control - TC", "tests/access_session_control"),
+    WorkbookModule("FT", "Footer & External Links", "Footer External Links - TC", "tests/footer_external_links"),
+    WorkbookModule("UX", "Interface / Responsive", "Interface Responsive - TC", "tests/interface_responsive"),
+    WorkbookModule("CW", "Core Workflows", "Core Workflows - TC", "tests/core"),
 ]
 
 

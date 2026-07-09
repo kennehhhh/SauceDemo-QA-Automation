@@ -16,6 +16,8 @@ from results.collector import (
 )
 from results.exporters import export_csv
 from results.models import ExecutionResult
+from workbook.module_registry import MODULES_BY_CODE
+from workbook.parser import validate_workbook_contract
 from workbook.updater import append_results_to_workbook
 
 RESULTS_DIR = Path(__file__).parent / "results"
@@ -62,6 +64,21 @@ def _actual_browser_name(driver) -> str:
     return DEFAULT_BROWSER.capitalize()
 
 
+def _actual_browser_version(driver) -> str:
+    if not driver:
+        return ""
+    return str(driver.capabilities.get("browserVersion") or driver.capabilities.get("version") or "")
+
+
+def _current_url(driver) -> str:
+    if not driver:
+        return ""
+    try:
+        return str(driver.current_url)
+    except Exception:
+        return ""
+
+
 @pytest.fixture
 def driver():
     driver = _make_driver(DEFAULT_BROWSER)
@@ -74,6 +91,7 @@ def driver():
 def record_actual_result(request):
     def _record(message: str) -> None:
         set_user_property(request.node, "actual_result", message)
+        set_user_property(request.node, "observed_summary", message)
 
     return _record
 
@@ -107,11 +125,33 @@ def pytest_addoption(parser):
         default="",
         help="Run only tests marked with the exact workbook Case ID.",
     )
+    parser.addoption(
+        "--module-code",
+        action="store",
+        default="",
+        help="Run only tests whose Case ID starts with the workbook module code, e.g. LG.",
+    )
+    parser.addoption(
+        "--run-only-automated",
+        action="store_true",
+        default=True,
+        help="Run only executable automated pytest cases; manual workbook cases are never materialized as rows.",
+    )
 
 
 def pytest_configure(config):
+    EXECUTION_RESULTS.clear()
     RESULTS_DIR.mkdir(exist_ok=True)
     ARTIFACTS_DIR.mkdir(exist_ok=True)
+    workbook_path = config.getoption("--workbook-path")
+    if workbook_path:
+        path = Path(workbook_path)
+        if not path.exists():
+            raise pytest.UsageError(f"--workbook-path does not exist: {workbook_path}")
+        errors = validate_workbook_contract(path)
+        if errors:
+            raise pytest.UsageError("Workbook contract validation failed:\n" + "\n".join(errors))
+
     started_at = datetime.now(timezone.utc)
     config._execution_started_at = started_at
     config._run_id = make_run_id(started_at)
@@ -123,12 +163,27 @@ def pytest_configure(config):
 
 def pytest_collection_modifyitems(config, items):
     wanted_case_id = config.getoption("--case-id")
-    if not wanted_case_id:
-        return
-    skip_other_cases = pytest.mark.skip(reason=f"Only running workbook Case ID {wanted_case_id}")
+    wanted_module_code = config.getoption("--module-code").upper()
+    if wanted_module_code and wanted_module_code not in MODULES_BY_CODE:
+        raise pytest.UsageError(f"Unknown --module-code {wanted_module_code!r}. Use one of: {', '.join(MODULES_BY_CODE)}")
+
+    collection_errors: list[str] = []
     for item in items:
-        if get_marker_value(item, "case_id") != wanted_case_id:
-            item.add_marker(skip_other_cases)
+        is_selenium_workbook_test = "driver" in getattr(item, "fixturenames", ())
+        case_id = get_marker_value(item, "case_id")
+        module = get_marker_value(item, "module")
+        if is_selenium_workbook_test and (not case_id or not module):
+            collection_errors.append(f"{item.nodeid} is a Selenium workbook test missing case_id/module marker.")
+            continue
+
+        if wanted_case_id and case_id != wanted_case_id:
+            item.add_marker(pytest.mark.skip(reason=f"Only running workbook Case ID {wanted_case_id}"))
+            continue
+        if wanted_module_code and not case_id.startswith(f"{wanted_module_code}-"):
+            item.add_marker(pytest.mark.skip(reason=f"Only running workbook module {wanted_module_code}"))
+
+    if collection_errors:
+        raise pytest.UsageError("Workbook metadata errors:\n" + "\n".join(collection_errors))
 
 
 @pytest.hookimpl(hookwrapper=True)
@@ -146,6 +201,8 @@ def pytest_runtest_makereport(item, call):
 
     driver = item.funcargs.get("driver")
     browser = _actual_browser_name(driver)
+    browser_version = _actual_browser_version(driver)
+    current_url = _current_url(driver)
     run_id = item.config._run_id
 
     if report.failed and driver is not None:
@@ -169,6 +226,8 @@ def pytest_runtest_makereport(item, call):
         run_id=run_id,
         browser=browser,
         artifacts_dir=ARTIFACTS_DIR,
+        browser_version=browser_version,
+        current_url=current_url,
     )
     if result is None:
         return

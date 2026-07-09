@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,6 +23,15 @@ def find_implemented_case_ids(tests_dir: Path) -> set[str]:
     return case_ids
 
 
+def find_case_locations(tests_dir: Path) -> dict[str, list[str]]:
+    locations: dict[str, list[str]] = defaultdict(list)
+    for path in tests_dir.rglob("test_*.py"):
+        text = path.read_text(encoding="utf-8")
+        for case_id in CASE_MARK_RE.findall(text):
+            locations[case_id].append(path.as_posix())
+    return dict(locations)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate pytest Case ID markers against the workbook.")
     parser.add_argument("--workbook", required=True, help="Path to the ground-truth workbook.")
@@ -29,15 +39,20 @@ def main() -> int:
     args = parser.parse_args()
 
     workbook_cases = load_case_index(args.workbook)
-    implemented = find_implemented_case_ids(Path(args.tests_dir))
+    locations = find_case_locations(Path(args.tests_dir))
+    implemented = set(locations)
     stale = sorted(case_id for case_id in implemented if case_id not in workbook_cases)
+    duplicates = {case_id: paths for case_id, paths in locations.items() if len(paths) > 1}
 
     print(f"Workbook cases: {len(workbook_cases)}")
     print(f"Implemented markers: {len(implemented)}")
     print(f"Stale automation mappings: {len(stale)}")
+    print(f"Duplicate automation mappings: {len(duplicates)}")
     for case_id in stale:
         print(f"STALE {case_id}")
-    return 1 if stale else 0
+    for case_id, paths in sorted(duplicates.items()):
+        print(f"DUPLICATE {case_id}: {'; '.join(paths)}")
+    return 1 if stale or duplicates else 0
 
 
 if __name__ == "__main__":

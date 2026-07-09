@@ -82,15 +82,17 @@ def concise_failure(report: pytest.TestReport, max_chars: int = 1400) -> str:
 
 
 def build_actual_result(item: pytest.Item, report: pytest.TestReport) -> str:
+    recorded = get_user_property(item, "actual_result")
     if report.passed:
-        return get_user_property(
-            item,
-            "actual_result",
-            get_marker_value(item, "actual_result", "Automated assertion completed as expected."),
-        )
+        marker_result = get_marker_value(item, "actual_result")
+        return recorded or marker_result or f"{get_marker_value(item, 'case_id', item.name)} completed with recorded assertions."
     if report.when == "setup":
         return f"Automation setup did not complete, so the case could not be meaningfully executed: {concise_failure(report)}"
-    return f"Expected workbook behavior was not observed. {concise_failure(report)}"
+    expected = get_user_property(item, "expected_summary", "Expected workbook behavior was not observed.")
+    observed = recorded or get_user_property(item, "observed_summary", "Observed behavior did not satisfy the assertion.")
+    current_url = get_user_property(item, "current_url")
+    url_text = f" Current URL: {current_url}." if current_url else ""
+    return f"{expected} Observed: {observed}.{url_text} Assertion: {concise_failure(report)}"
 
 
 def build_execution_result(
@@ -100,6 +102,8 @@ def build_execution_result(
     run_id: str,
     browser: str,
     artifacts_dir: Path,
+    browser_version: str = "",
+    current_url: str = "",
 ) -> ExecutionResult | None:
     metadata = get_case_metadata(item)
     if metadata is None:
@@ -111,6 +115,10 @@ def build_execution_result(
 
     evidence_path = get_user_property(item, "evidence_path")
     remarks = f"Automated by Selenium + pytest; run_id={run_id}"
+    if browser_version:
+        remarks += f"; browser_version={browser_version}"
+    if current_url:
+        set_user_property(item, "current_url", current_url)
     if evidence_path:
         remarks += f"; evidence: {evidence_path}"
 

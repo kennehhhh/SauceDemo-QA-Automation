@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 from datetime import datetime
@@ -91,6 +92,7 @@ def append_results_to_workbook(
             f"{workbook_path.stem}_with_automation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
         )
 
+    temp_destination = destination.with_name(f"{destination.stem}.tmp{destination.suffix}")
     wb = load_workbook(workbook_path)
     try:
         if EXECUTION_LOG_SHEET not in wb.sheetnames:
@@ -108,9 +110,19 @@ def append_results_to_workbook(
             row_number += 1
 
         destination.parent.mkdir(parents=True, exist_ok=True)
-        wb.save(destination)
+        wb.save(temp_destination)
     finally:
         wb.close()
+
+    validation_wb = load_workbook(temp_destination, read_only=True, data_only=False)
+    try:
+        if EXECUTION_LOG_SHEET not in validation_wb.sheetnames:
+            raise ValueError(f"Saved workbook is missing required sheet: {EXECUTION_LOG_SHEET}")
+        find_execution_log_header_row(validation_wb[EXECUTION_LOG_SHEET])
+    finally:
+        validation_wb.close()
+
+    os.replace(temp_destination, destination)
 
     imported_runs.add(run_id)
     _write_ledger(ledger_path, imported_runs)
