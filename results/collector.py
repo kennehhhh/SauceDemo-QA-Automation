@@ -110,10 +110,14 @@ def build_execution_result(
         return None
 
     status = classify_report(report)
+    forced_status = get_user_property(item, "forced_status")
+    if forced_status:
+        status = forced_status
     if status not in VALID_STATUSES:
         raise ValueError(f"Unsupported execution status: {status}")
 
     evidence_path = get_user_property(item, "evidence_path")
+    additional_remarks = get_user_property(item, "additional_remarks")
     remarks = f"Automated by Selenium + pytest; run_id={run_id}"
     if browser_version:
         remarks += f"; browser_version={browser_version}"
@@ -121,6 +125,8 @@ def build_execution_result(
         set_user_property(item, "current_url", current_url)
     if evidence_path:
         remarks += f"; evidence: {evidence_path}"
+    if additional_remarks:
+        remarks += f"; {additional_remarks}"
 
     return ExecutionResult(
         case_id=metadata.case_id,

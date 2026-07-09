@@ -19,6 +19,8 @@ from results.models import ExecutionResult
 from workbook.module_registry import MODULES_BY_CODE
 from workbook.parser import validate_workbook_contract
 from workbook.updater import append_results_to_workbook
+from workbook.expectation_policy import ExpectationBlocked
+from workbook.expectations import safe_preflight_case_ids, validate_expectation_dependencies
 
 RESULTS_DIR = Path(__file__).parent / "results"
 ARTIFACTS_DIR = Path(__file__).parent / "artifacts"
@@ -137,6 +139,11 @@ def pytest_addoption(parser):
         default=True,
         help="Run only executable automated pytest cases; manual workbook cases are never materialized as rows.",
     )
+    parser.addoption(
+        "--expectation-preflight",
+        action="store_true",
+        help="Run only safe workbook-labeled Standard Expectation presence/bounded probes.",
+    )
 
 
 def pytest_configure(config):
@@ -151,6 +158,11 @@ def pytest_configure(config):
         errors = validate_workbook_contract(path)
         if errors:
             raise pytest.UsageError("Workbook contract validation failed:\n" + "\n".join(errors))
+        expectation_errors = validate_expectation_dependencies(path)
+        if expectation_errors:
+            raise pytest.UsageError("Expectation dependency validation failed:\n" + "\n".join(expectation_errors))
+    elif config.getoption("--expectation-preflight"):
+        raise pytest.UsageError("--expectation-preflight requires --workbook-path so expectation labels come from the workbook.")
 
     started_at = datetime.now(timezone.utc)
     config._execution_started_at = started_at
@@ -164,6 +176,11 @@ def pytest_configure(config):
 def pytest_collection_modifyitems(config, items):
     wanted_case_id = config.getoption("--case-id")
     wanted_module_code = config.getoption("--module-code").upper()
+    preflight_case_ids = (
+        safe_preflight_case_ids(config.getoption("--workbook-path"))
+        if config.getoption("--expectation-preflight")
+        else None
+    )
     if wanted_module_code and wanted_module_code not in MODULES_BY_CODE:
         raise pytest.UsageError(f"Unknown --module-code {wanted_module_code!r}. Use one of: {', '.join(MODULES_BY_CODE)}")
 
@@ -181,6 +198,9 @@ def pytest_collection_modifyitems(config, items):
             continue
         if wanted_module_code and not case_id.startswith(f"{wanted_module_code}-"):
             item.add_marker(pytest.mark.skip(reason=f"Only running workbook module {wanted_module_code}"))
+            continue
+        if preflight_case_ids is not None and case_id not in preflight_case_ids:
+            item.add_marker(pytest.mark.skip(reason="Expectation preflight runs only safe expectation probes."))
 
     if collection_errors:
         raise pytest.UsageError("Workbook metadata errors:\n" + "\n".join(collection_errors))
@@ -204,6 +224,17 @@ def pytest_runtest_makereport(item, call):
     browser_version = _actual_browser_version(driver)
     current_url = _current_url(driver)
     run_id = item.config._run_id
+
+    if call.excinfo and isinstance(call.excinfo.value, ExpectationBlocked):
+        blocked = call.excinfo.value
+        set_user_property(item, "forced_status", "Blocked")
+        set_user_property(item, "actual_result", str(blocked))
+        set_user_property(item, "observed_summary", str(blocked))
+        set_user_property(
+            item,
+            "additional_remarks",
+            f"Blocked by failed prerequisite {blocked.prerequisite_case_id}; Standard Expectation; no defect auto-created",
+        )
 
     if report.failed and driver is not None:
         evidence_dir = ARTIFACTS_DIR / run_id

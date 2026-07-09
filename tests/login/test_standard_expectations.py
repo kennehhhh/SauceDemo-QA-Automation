@@ -4,6 +4,7 @@ import pytest
 
 from config import USERS
 from pages.login_page import LoginPage
+from workbook.expectation_policy import ExpectationBlocked
 
 
 LOGIN_MODULE = "Login & Session"
@@ -28,9 +29,14 @@ def test_remember_me_option_is_available(driver, record_actual_result):
 @pytest.mark.test_user("standard_user")
 def test_remember_me_persists_login_convenience(driver, record_actual_result):
     page = LoginPage(driver).open()
-    exists = page.remember_me_exists()
-    record_actual_result("Remember Me control was available for persistence testing." if exists else "No Remember Me control was present, so intended persistence could not be exercised.")
-    assert exists
+    if not page.remember_me_exists():
+        raise ExpectationBlocked(
+            "LG-0029",
+            "LG-0028",
+            "Remember Me persistence behavior could not be executed because the required Remember Me control was absent.",
+        )
+    record_actual_result("Remember Me control was present, so persistence behavior prerequisite was available.")
+    assert page.remember_me_exists()
 
 
 @pytest.mark.login

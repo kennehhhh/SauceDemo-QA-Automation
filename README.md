@@ -9,9 +9,10 @@ The project is not complete yet. A module is only implemented when executable py
 | Module | Executable Case IDs |
 |---|---|
 | Login & Session | `LG-0001` through `LG-0039` |
+| Product Listing | `PL-0001` through `PL-0023` |
 | Core Workflows | `CW-0001` through `CW-0007` |
 
-`LG-0040` is UAT/manual and intentionally has no Selenium test. Other workbook modules are not implemented yet.
+`LG-0040` and `PL-0024` are UAT/manual and intentionally have no Selenium test. Other workbook modules are not implemented yet.
 
 ## Current Structure
 
@@ -26,6 +27,7 @@ saucedemo_selenium_core/
 |   +-- validate_mappings.py
 +-- tests/
 |   +-- login/                  # executable LG tests
+|   +-- product_listing/        # executable PL tests
 |   +-- unit/                   # framework/unit tests
 |   +-- test_core_workflows.py  # executable CW proof set
 +-- workbook/                   # parser, dispositions, module registry, updater
@@ -84,6 +86,12 @@ Run one workbook module code:
 
 ```bash
 pytest --module-code LG
+```
+
+Run safe Standard Expectation preflight probes:
+
+```bash
+pytest --expectation-preflight --workbook-path "D:\Downloads\SauceDemo-Spreadsheet.xlsx"
 ```
 
 ## Workbook Result Append

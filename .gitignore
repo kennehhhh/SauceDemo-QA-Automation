@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+artifacts/
+results/*.csv
+results/*.json
+*.import-ledger.json
