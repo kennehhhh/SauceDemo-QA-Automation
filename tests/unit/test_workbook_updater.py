@@ -59,6 +59,19 @@ def make_workbook(path: Path) -> Path:
     return path
 
 
+def make_formula_prefilled_workbook(path: Path) -> Path:
+    make_workbook(path)
+    wb = load_workbook(path)
+    try:
+        ws = wb["Test Execution Log"]
+        for row_number in range(5, 1006):
+            ws.cell(row=row_number, column=1).value = f'=IF(B{row_number}="","","EXE-"&TEXT(ROW()-4,"0000"))'
+        wb.save(path)
+    finally:
+        wb.close()
+    return path
+
+
 def test_header_row_4_detection_and_next_execution(tmp_path):
     path = make_workbook(tmp_path / "source.xlsx")
     wb = load_workbook(path)
@@ -88,6 +101,30 @@ def test_append_continues_execution_id_and_blocks_duplicate_run(tmp_path):
 
     with pytest.raises(ValueError, match="already imported"):
         append_results_to_workbook(source, [make_result()], output_path=tmp_path / "out2.xlsx", ledger_path=ledger)
+
+
+def test_append_uses_first_blank_case_id_row_and_preserves_execution_id_formula(tmp_path):
+    source = make_formula_prefilled_workbook(tmp_path / "source.xlsx")
+    output = tmp_path / "out.xlsx"
+
+    wb = load_workbook(source, read_only=False, data_only=False)
+    try:
+        ws = wb["Test Execution Log"]
+        assert ws.max_row == 1005
+        assert first_available_row(ws, min_row=5) == 5
+    finally:
+        wb.close()
+
+    append_results_to_workbook(source, [make_result()], output_path=output, ledger_path=tmp_path / "ledger.json")
+
+    wb = load_workbook(output, read_only=False, data_only=False)
+    try:
+        ws = wb["Test Execution Log"]
+        assert ws.cell(row=5, column=1).value == '=IF(B5="","","EXE-"&TEXT(ROW()-4,"0000"))'
+        assert ws.cell(row=5, column=2).value == "LG-0001"
+        assert ws.cell(row=1006, column=2).value is None
+    finally:
+        wb.close()
 
 
 def test_invalid_case_id_aborts_append_without_output(tmp_path):

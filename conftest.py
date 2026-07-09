@@ -28,11 +28,24 @@ ARTIFACTS_DIR = Path(__file__).parent / "artifacts"
 EXECUTION_RESULTS: list[ExecutionResult] = []
 
 
+def _configure_chromium_profile(options) -> None:
+    options.add_experimental_option(
+        "prefs",
+        {
+            "credentials_enable_service": False,
+            "profile.password_manager_enabled": False,
+            "profile.password_manager_leak_detection": False,
+        },
+    )
+    options.add_argument("--disable-features=PasswordLeakDetection")
+
+
 def _make_driver(browser_name: str):
     browser_name = browser_name.lower()
 
     if browser_name == "chrome":
         options = webdriver.ChromeOptions()
+        _configure_chromium_profile(options)
         if HEADLESS:
             options.add_argument("--headless=new")
         options.add_argument("--window-size=1440,1000")
@@ -40,6 +53,7 @@ def _make_driver(browser_name: str):
 
     if browser_name == "edge":
         options = webdriver.EdgeOptions()
+        _configure_chromium_profile(options)
         if HEADLESS:
             options.add_argument("--headless=new")
         options.add_argument("--window-size=1440,1000")

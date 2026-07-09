@@ -15,6 +15,8 @@ from workbook.parser import load_case_index
 
 
 EXECUTION_ID_RE = re.compile(r"^EXE-(\d+)$")
+EXECUTION_ID_COLUMN = 1
+CASE_ID_COLUMN = 2
 
 
 def _value(value: object) -> str:
@@ -32,10 +34,14 @@ def next_execution_number(ws, *, min_row: int) -> int:
 
 
 def first_available_row(ws, *, min_row: int) -> int:
-    row = ws.max_row + 1
-    while row > min_row and all(_value(ws.cell(row=row - 1, column=col).value) == "" for col in range(1, 12)):
-        row -= 1
-    return max(row, min_row)
+    row_number = min_row
+    while _value(ws.cell(row=row_number, column=CASE_ID_COLUMN).value) != "":
+        row_number += 1
+    return row_number
+
+
+def _cell_has_formula(cell) -> bool:
+    return isinstance(cell.value, str) and cell.value.startswith("=")
 
 
 def find_execution_log_header_row(ws) -> int:
@@ -93,6 +99,7 @@ def append_results_to_workbook(
         )
 
     temp_destination = destination.with_name(f"{destination.stem}.tmp{destination.suffix}")
+    written_rows: list[tuple[int, str]] = []
     wb = load_workbook(workbook_path)
     try:
         if EXECUTION_LOG_SHEET not in wb.sheetnames:
@@ -105,9 +112,13 @@ def append_results_to_workbook(
         for result in results:
             row = result.to_workbook_row(f"EXE-{execution_number:04d}")
             for column_number, field_name in enumerate(WORKBOOK_EXECUTION_FIELDS, start=1):
-                ws.cell(row=row_number, column=column_number).value = row[field_name]
+                cell = ws.cell(row=row_number, column=column_number)
+                if column_number == EXECUTION_ID_COLUMN and _cell_has_formula(cell):
+                    continue
+                cell.value = row[field_name]
+            written_rows.append((row_number, result.case_id))
             execution_number += 1
-            row_number += 1
+            row_number = first_available_row(ws, min_row=row_number + 1)
 
         destination.parent.mkdir(parents=True, exist_ok=True)
         wb.save(temp_destination)
@@ -118,7 +129,15 @@ def append_results_to_workbook(
     try:
         if EXECUTION_LOG_SHEET not in validation_wb.sheetnames:
             raise ValueError(f"Saved workbook is missing required sheet: {EXECUTION_LOG_SHEET}")
-        find_execution_log_header_row(validation_wb[EXECUTION_LOG_SHEET])
+        validation_ws = validation_wb[EXECUTION_LOG_SHEET]
+        find_execution_log_header_row(validation_ws)
+        for row_number, case_id in written_rows:
+            saved_case_id = _value(validation_ws.cell(row=row_number, column=CASE_ID_COLUMN).value)
+            if saved_case_id != case_id:
+                raise ValueError(
+                    f"Saved workbook validation failed: expected Case ID {case_id} at row {row_number}, "
+                    f"found {saved_case_id or '<blank>'}."
+                )
     finally:
         validation_wb.close()
 

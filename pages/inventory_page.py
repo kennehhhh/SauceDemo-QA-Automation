@@ -78,6 +78,7 @@ class InventoryPage(BasePage):
 
     def open_cart(self) -> None:
         self.click(self.CART_LINK)
+        self.wait_url_contains("cart.html")
 
     def sort_by_value(self, value: str) -> None:
         Select(self.visible(self.SORT)).select_by_value(value)

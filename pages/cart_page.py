@@ -23,12 +23,14 @@ class CartPage(BasePage):
         assert self.text(self.TITLE) == "Your Cart"
 
     def item_names(self) -> list[str]:
-        elems = self.driver.find_elements(By.CSS_SELECTOR, '[data-test="inventory-item-name"]')
+        cart_list = self.present(self.CART_LIST)
+        elems = cart_list.find_elements(By.CSS_SELECTOR, '[data-test="inventory-item-name"]')
         return [e.text.strip() for e in elems]
 
     def items(self) -> list[dict[str, str]]:
         records = []
-        for item in self.elements(self.CART_ITEM):
+        cart_list = self.present(self.CART_LIST)
+        for item in cart_list.find_elements(*self.CART_ITEM):
             records.append(
                 {
                     "quantity": item.find_element(By.CSS_SELECTOR, '[data-test="item-quantity"]').text.strip(),

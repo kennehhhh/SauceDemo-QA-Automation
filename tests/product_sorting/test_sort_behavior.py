@@ -49,9 +49,11 @@ def test_price_sorting(driver, record_actual_result, case_id: str, sort_value: s
 @pytest.mark.module(MODULE)
 @pytest.mark.test_user("standard_user")
 def test_default_sort_order_is_deterministic(driver, record_actual_result):
-    first = login_inventory(driver).product_names()
-    driver.get("https://www.saucedemo.com/inventory.html")
-    second = login_inventory(driver).product_names()
+    page = login_inventory(driver)
+    first = page.product_names()
+    driver.refresh()
+    page.assert_loaded()
+    second = page.product_names()
     record_actual_result(f"Initial product order was consistent across repeated loads: {', '.join(first)}")
     assert first == second
 
@@ -67,7 +69,9 @@ def test_changing_sort_does_not_alter_cart_contents(driver, record_actual_result
     before_badge = page.cart_count()
     page.sort_by_value("hilo")
     page.open_cart()
-    cart_names = CartPage(driver).item_names()
+    cart = CartPage(driver)
+    cart.assert_loaded()
+    cart_names = cart.item_names()
     record_actual_result(f"After changing sort, cart badge was {before_badge} and cart contained: {', '.join(cart_names)}")
     assert before_badge == 1
     assert cart_names == [PRODUCT_A]
