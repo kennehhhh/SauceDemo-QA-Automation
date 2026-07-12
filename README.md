@@ -2,7 +2,7 @@
 
 This repository executes Case ID-mapped Selenium tests against the SauceDemo workbook. The attached `SauceDemo-Spreadsheet.xlsx` is the source of truth for scenarios, expected results, user applicability, browser planning, and execution logging.
 
-The project is not complete yet. A module is only implemented when executable pytest/Selenium tests exist for its required Case IDs.
+A module is only implemented when executable pytest/Selenium tests exist for its required Case IDs.
 
 ## Implemented Executable Coverage
 
